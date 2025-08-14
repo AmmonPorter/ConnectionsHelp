@@ -4,35 +4,35 @@ from datetime import datetime
 
 def fetch_and_save_puzzle():
     """
-    Fetches the latest Connections puzzle data and saves the words to a JSON file.
+    Fetches the latest Connections puzzle data from an alternative source
+    and saves the words to a JSON file.
     """
     try:
-        # The URL for the source that provides Connections data.
-        # We fetch the data for the current date.
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        url = f"https://www.nytimes.com/svc/connections/v2/{today_str}.json"
+        # A more reliable, unofficial source for Connections data
+        url = "https://connections.swellgarfo.com/nyt/latest"
 
-        # Make the request to the URL.
+        # Make the request to the URL
         response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        response.raise_for_status()  # Raise an exception for bad status codes
 
-        # Parse the JSON data from the response.
+        # Parse the JSON data from the response
         data = response.json()
 
-        # The words are in the 'startingWords' key.
+        # The words are in the 'startingWords' key
         words = data.get("startingWords", [])
         
         if not words:
-            print("Could not find 'startingWords' in the response.")
+            print("Could not find 'startingWords' in the response from the new source.")
             return
 
-        # Prepare the data to be saved.
+        # Prepare the data to be saved
         output_data = {"words": words}
 
-        # Save the words to a file named puzzle.json.
+        # Save the words to a file named puzzle.json
         with open("puzzle.json", "w") as f:
             json.dump(output_data, f, indent=2)
 
+        today_str = data.get("print_date", "today")
         print(f"Successfully fetched and saved {len(words)} words for {today_str}.")
 
     except requests.exceptions.RequestException as e:
@@ -44,3 +44,4 @@ def fetch_and_save_puzzle():
 
 if __name__ == "__main__":
     fetch_and_save_puzzle()
+
