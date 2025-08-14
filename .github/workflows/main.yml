@@ -32,9 +32,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      # Step 4: Run our Python script to fetch the puzzle
-      - name: Run fetch script
-        run: python fetch_puzzle.py
+      # Step 4: Run our Python script with diagnostic commands
+      - name: Run fetch script and debug
+        run: |
+          echo "--- Running python script... ---"
+          python fetch_puzzle.py
+          echo "--- Python script finished. ---"
+          echo "--- Listing files in the directory: ---"
+          ls -l
 
       # Step 5: Commit the new puzzle.json file back to the repository
       - name: Commit and push if changed
