@@ -10,9 +10,14 @@ def fetch_and_save_puzzle():
     try:
         # A more reliable, unofficial source for Connections data
         url = "https://connections.swellgarfo.com/nyt/latest"
+        
+        # Add a User-Agent header to mimic a browser
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
 
-        # Make the request to the URL
-        response = requests.get(url)
+        # Make the request to the URL with the headers
+        response = requests.get(url, headers=headers)
         response.raise_for_status()  # Raise an exception for bad status codes
 
         # Parse the JSON data from the response
@@ -37,6 +42,8 @@ def fetch_and_save_puzzle():
 
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data: {e}")
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error: {e}. Response text: {response.text}")
     except KeyError as e:
         print(f"Error parsing JSON data: Missing key {e}")
     except Exception as e:
@@ -44,4 +51,3 @@ def fetch_and_save_puzzle():
 
 if __name__ == "__main__":
     fetch_and_save_puzzle()
-
