@@ -2,39 +2,50 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connections Brainstorm Tool</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h1>Connections Brainstorm Tool</h1>
+    <div class="description">
+        <p>Enter 16 words separated by commas, or use the daily puzzle loaded by default.</p>
+    </div>
     <div class="top-controls">
-        <input id="wordInput" type="text" placeholder="Loading today's puzzle...">
+        <input id="wordInput" type="text" placeholder="Enter Puzzle...">
         <button onclick="startGame()">Start / Reset with Input</button>
     </div>
     
     <div class="main-container">
-        <div class="left-panel">
+        <div class="spacer-panel"></div>
+        <div class="grid-panel">
             <div id="grid"></div>
-            <div class="controls">
-                 <div class="control-group">
+        </div>
+        <div class="controls-panel">
+            <div class="control-box-container">
+                <div class="control-box">
                     <p>Group Selected (4):</p>
-                    <button id="groupBtn-green" class="color-btn green" onclick="handleGroupAction('green')">Green</button>
-                    <button id="groupBtn-yellow" class="color-btn yellow" onclick="handleGroupAction('yellow')">Yellow</button>
-                    <button id="groupBtn-blue" class="color-btn blue" onclick="handleGroupAction('blue')">Blue</button>
-                    <button id="groupBtn-purple" class="color-btn purple" onclick="handleGroupAction('purple')">Purple</button>
+                    <div class="button-grid">
+                        <button id="groupBtn-green" class="color-btn green" onclick="handleGroupAction('green')">Green</button>
+                        <button id="groupBtn-yellow" class="color-btn yellow" onclick="handleGroupAction('yellow')">Yellow</button>
+                        <button id="groupBtn-blue" class="color-btn blue" onclick="handleGroupAction('blue')">Blue</button>
+                        <button id="groupBtn-purple" class="color-btn purple" onclick="handleGroupAction('purple')">Purple</button>
+                    </div>
                 </div>
-                <div class="control-group">
-                    <button onclick="shuffleUnassigned()">Shuffle</button>
-                    <button id="undoBtn" onclick="undoLastGroup()">Undo</button>
+                <div class="control-box">
+                    <p>Assign color to selected:</p>
+                    <div class="button-grid">
+                        <button class="color-btn green" onclick="assignSingleColor('green')">Green</button>
+                        <button class="color-btn yellow" onclick="assignSingleColor('yellow')">Yellow</button>
+                        <button class="color-btn blue" onclick="assignSingleColor('blue')">Blue</button>
+                        <button class="color-btn purple" onclick="assignSingleColor('purple')">Purple</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="right-panel">
-            <p>Assign color to selected:</p>
-            <button class="color-btn green" onclick="assignSingleColor('green')">Green</button>
-            <button class="color-btn yellow" onclick="assignSingleColor('yellow')">Yellow</button>
-            <button class="color-btn blue" onclick="assignSingleColor('blue')">Blue</button>
-            <button class="color-btn purple" onclick="assignSingleColor('purple')">Purple</button>
+            <div class="control-group">
+                <button onclick="shuffleUnassigned()">Shuffle</button>
+                <button id="undoBtn" onclick="undoLastGroup()">Undo</button>
+            </div>
         </div>
     </div>
 

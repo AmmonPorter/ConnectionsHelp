@@ -1,62 +1,52 @@
+// --- State Management ---
 let words = [];
 let groups = [];
 let selected = [];
-let singleWordColors = {}; // To store colors for individual words
+let singleWordColors = {}; // Stores colors for individual words
 
-// Colors for assignments
+// --- Constants ---
 const CATEGORY_COLORS = {
     yellow: "#f8df74",
     green: "#a1c35f",
     blue: "#b1c4ee",
     purple: "#ba82c3"
 };
+const defaultWords = ["APPLE", "BANANA", "CHERRY", "DATE", "ELDERBERRY", "FIG", "GRAPE", "HONEYDEW", "KIWI", "LEMON", "MANGO", "NECTARINE", "ORANGE", "PAPAYA", "QUINCE", "RASPBERRY"];
 
 /**
- * Runs when the page first loads to automatically fetch the puzzle.
+ * Runs when the page first loads to populate the default puzzle.
  */
 window.onload = function() {
-    fetchTodaysPuzzle();
+    // Initialize the grid with the default puzzle words
+    words = [...defaultWords];
+    groups = [];
+    selected = [];
+    singleWordColors = {};
+    renderGrid();
+
+    // Clear the input field to show the placeholder text
+    document.getElementById('wordInput').value = '';
 };
 
 /**
- * Fetches the puzzle data from a file in the repository.
- * This file would be updated daily by a separate GitHub Action script.
- */
-async function fetchTodaysPuzzle() {
-    const wordInput = document.getElementById('wordInput');
-    
-    try {
-        wordInput.placeholder = 'Fetching...';
-        
-        // In a real scenario, you'd fetch from a URL.
-        // For this example, we will simulate a fetch with a delay.
-        await new Promise(resolve => setTimeout(resolve, 750));
-        
-        // This is where you would process the response from the fetch:
-        // const response = await fetch('https://your-data-url/puzzle.json');
-        // const data = await response.json();
-        // const puzzleWords = data.words; 
-
-        // SIMULATED DATA for demonstration:
-        const puzzleWords = ["APPLE", "BANANA", "CHERRY", "DATE", "ELDERBERRY", "FIG", "GRAPE", "HONEYDEW", "KIWI", "LEMON", "MANGO", "NECTARINE", "ORANGE", "PAPAYA", "QUINCE", "RASPBERRY"];
-        
-        wordInput.value = puzzleWords.join(', ');
-        startGame();
-
-    } catch (error) {
-        console.error('Failed to fetch puzzle:', error);
-        wordInput.placeholder = 'Could not fetch puzzle. Enter words manually.';
-    }
-}
-
-
-/**
- * Initializes the game with words from the input field.
+ * Initializes or resets the game with words from the input field.
  */
 function startGame() {
-    const input = document.getElementById('wordInput').value.trim();
-    if (!input) return;
-    words = input.split(',').map(w => w.trim().toUpperCase()).filter(w => w);
+    const wordInput = document.getElementById('wordInput');
+    let currentInput = wordInput.value.trim();
+
+    if (!currentInput) {
+        // If the user clears the box and hits start, clear the grid and the words data.
+        words = [];
+        groups = [];
+        selected = [];
+        singleWordColors = {};
+        document.getElementById('grid').innerHTML = '';
+        return;
+    }
+    
+    // Sanitize input: split by comma, trim whitespace, convert to uppercase, and filter out empty strings.
+    words = currentInput.split(',').map(w => w.trim().toUpperCase()).filter(w => w);
     groups = [];
     selected = [];
     singleWordColors = {};
@@ -64,7 +54,7 @@ function startGame() {
 }
 
 /**
- * Renders the entire grid and updates the state of the control buttons.
+ * Renders the entire grid based on the current state (groups and unassigned words).
  */
 function renderGrid() {
     const grid = document.getElementById('grid');
@@ -73,106 +63,113 @@ function renderGrid() {
     const groupedWordsSet = new Set(groups.flatMap(g => g.words));
     const unassigned = words.filter(w => !groupedWordsSet.has(w));
 
-    // First, render the completed groups at the top
+    // 1. Render the completed groups at the top
     groups.forEach((group) => {
         group.words.forEach(word => {
-            const wordDiv = document.createElement('div');
-            wordDiv.className = 'word grouped';
+            const wordDiv = createWordElement(word, true);
             wordDiv.style.backgroundColor = group.color;
-            wordDiv.textContent = word;
             grid.appendChild(wordDiv);
-            fitText(wordDiv);
         });
     });
 
-    // Then, render the unassigned words
+    // 2. Render the unassigned words
     unassigned.forEach(word => {
-        const btn = document.createElement('div');
-        btn.textContent = word;
-        btn.className = 'word';
+        const btn = createWordElement(word, false);
         
+        // Apply individual color if it exists
         const color = singleWordColors[word];
         if (color) {
             btn.style.background = color;
         }
         
+        // Highlight if selected
         if (selected.includes(word)) {
             btn.classList.add('selected');
         }
         
         btn.onclick = () => toggleSelect(word);
         grid.appendChild(btn);
-        fitText(btn);
     });
     
-    // After rendering the grid, update the group buttons' text
     updateGroupButtons();
 }
 
 /**
- * Updates the text of the main grouping buttons based on which groups exist.
+ * Factory function to create a word element div.
+ * @param {string} word - The text content of the word.
+ * @param {boolean} isGrouped - If the word is part of a final group.
+ * @returns {HTMLElement} The created div element.
+ */
+function createWordElement(word, isGrouped) {
+    const element = document.createElement('div');
+    element.textContent = word;
+    element.className = isGrouped ? 'word grouped' : 'word';
+    fitText(element);
+    return element;
+}
+
+/**
+ * Updates the text of the main grouping buttons (e.g., "Green" vs "Unselect").
  */
 function updateGroupButtons() {
-    const colorNames = ['green', 'yellow', 'blue', 'purple'];
-    colorNames.forEach(colorName => {
+    Object.keys(CATEGORY_COLORS).forEach(colorName => {
         const btn = document.getElementById(`groupBtn-${colorName}`);
         if (!btn) return;
 
         const groupExists = groups.some(g => g.colorName === colorName);
-        if (groupExists) {
-            btn.textContent = 'Unselect';
-        } else {
-            // Capitalize the first letter for the button text
-            btn.textContent = colorName.charAt(0).toUpperCase() + colorName.slice(1);
-        }
+        btn.textContent = groupExists ? 'Unselect' : colorName.charAt(0).toUpperCase() + colorName.slice(1);
     });
 }
 
 /**
- * Dynamically scales text to fit its container.
+ * Dynamically scales text to fit its container to prevent overflow.
  */
 function fitText(element, maxFontSize = 16) {
-    const minFontSize = 8;
-    let fontSize = maxFontSize;
-    element.style.fontSize = fontSize + "px";
-    while (element.scrollWidth > element.clientWidth && fontSize > minFontSize) {
-        fontSize--;
+    // This function needs to be called after the element is in the DOM to measure it.
+    // A small timeout ensures rendering has occurred.
+    setTimeout(() => {
+        const minFontSize = 8;
+        let fontSize = maxFontSize;
         element.style.fontSize = fontSize + "px";
-    }
+        // Reduce font size until the text fits within the element's width
+        while (element.scrollWidth > element.clientWidth && fontSize > minFontSize) {
+            fontSize--;
+            element.style.fontSize = fontSize + "px";
+        }
+    }, 0);
 }
 
 /**
  * Checks if a word is part of a completed group.
+ * @param {string} word - The word to check.
+ * @returns {boolean}
  */
 function isWordInGroup(word) {
     return groups.some(g => g.words.includes(word));
 }
 
 /**
- * Handles the primary action for a color group button.
- * Either creates a group or unselects an existing one.
- * @param {string} colorName The color name ('green', 'yellow', etc.).
+ * Handles the primary action for a color group button: either creates a new group or unselects an existing one.
+ * @param {string} colorName - The name of the color group ('green', 'yellow', etc.).
  */
 function handleGroupAction(colorName) {
-    const groupExists = groups.some(g => g.colorName === colorName);
+    const groupIndex = groups.findIndex(g => g.colorName === colorName);
 
-    if (groupExists) {
-        // This is an "Unselect" action
-        const groupIndex = groups.findIndex(g => g.colorName === colorName);
-        if (groupIndex > -1) {
-            groups.splice(groupIndex, 1);
-        }
+    if (groupIndex > -1) {
+        // Action: Unselect the existing group
+        groups.splice(groupIndex, 1);
     } else {
-        // This is a "Group" action
-        if (selected.length !== 4) return; // Guard clause
-        const color = CATEGORY_COLORS[colorName];
-        // Add colorName to the group object for tracking
-        groups.push({ words: [...selected], color: color, colorName: colorName }); 
+        // Action: Create a new group
+        if (selected.length !== 4) return; // Guard clause: must have 4 words selected
         
-        selected.forEach(word => {
-            delete singleWordColors[word];
-        });
+        groups.push({ 
+            words: [...selected], 
+            color: CATEGORY_COLORS[colorName], 
+            colorName: colorName 
+        }); 
         
+        // Clear any temporary single-word colors from the newly grouped words
+        selected.forEach(word => delete singleWordColors[word]);
         selected = [];
     }
     
@@ -180,28 +177,32 @@ function handleGroupAction(colorName) {
 }
 
 /**
- * Toggles the selection status of a word.
+ * Toggles the selection status of a word if it's not already in a final group.
+ * @param {string} word - The word to select or deselect.
  */
 function toggleSelect(word) {
     if (isWordInGroup(word)) return;
 
     const index = selected.indexOf(word);
     if (index > -1) {
-        selected.splice(index, 1);
+        selected.splice(index, 1); // Deselect
     } else if (selected.length < 4) {
-        selected.push(word);
+        selected.push(word); // Select
     }
     renderGrid();
 }
 
 /**
- * Assigns a temporary color to all currently selected words.
+ * Assigns a temporary color to all currently selected words for brainstorming.
+ * @param {string} colorName - The color to assign.
  */
 function assignSingleColor(colorName) {
     if (selected.length === 0) return;
     const color = CATEGORY_COLORS[colorName];
+    
     selected.forEach(word => {
         if (!isWordInGroup(word)) {
+            // If the word already has this color, remove it. Otherwise, assign it.
             if (singleWordColors[word] === color) {
                 delete singleWordColors[word];
             } else {
@@ -209,39 +210,36 @@ function assignSingleColor(colorName) {
             }
         }
     });
-    selected = [];
+    
+    selected = []; // Deselect words after assigning color
     renderGrid();
 }
 
 /**
- * Shuffles the unassigned words in the grid.
+ * Shuffles the positions of only the unassigned words in the grid.
  */
 function shuffleUnassigned() {
     const groupedWords = new Set(groups.flatMap(g => g.words));
     let unassigned = words.filter(w => !groupedWords.has(w));
-    shuffle(unassigned);
     
-    const groupedWordsInOrder = groups.flatMap(g => g.words);
+    // Fisher-Yates shuffle algorithm
+    for (let i = unassigned.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [unassigned[i], unassigned[j]] = [unassigned[j], unassigned[i]];
+    }
+    
+    // Reconstruct the main 'words' array to maintain the order for rendering
+    const groupedWordsInOrder = words.filter(w => groupedWords.has(w));
     words = [...groupedWordsInOrder, ...unassigned];
 
     renderGrid();
 }
 
 /**
- * Removes the last submitted group.
+ * Removes the most recently created group.
  */
 function undoLastGroup() {
     if (!groups.length) return;
     groups.pop();
     renderGrid();
-}
-
-/**
- * Shuffles an array in place.
- */
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
 }
